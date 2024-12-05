@@ -1,0 +1,225 @@
+-- DROP TABLE film;
+
+CREATE TABLE film (
+	id int4 NOT NULL,
+	name_ varchar(30) NOT NULL,
+	description text NULL,
+	CONSTRAINT film_pkey PRIMARY KEY (id)
+);
+
+-- Permissions
+
+ALTER TABLE film OWNER TO postgres;
+GRANT ALL ON TABLE film TO postgres;
+
+
+-- public.hall определение
+
+-- Drop table
+
+-- DROP TABLE hall;
+
+CREATE TABLE hall (
+	id int4 NOT NULL,
+	name_ varchar(30) NOT NULL,
+	CONSTRAINT hall_pkey PRIMARY KEY (id)
+);
+
+-- Permissions
+
+ALTER TABLE hall OWNER TO postgres;
+GRANT ALL ON TABLE hall TO postgres;
+
+
+-- public.hall_row определение
+
+-- Drop table
+
+-- DROP TABLE hall_row;
+
+CREATE TABLE hall_row (
+	id_hall int4 NULL,
+	namber_ int4 NOT NULL,
+	capacity int2 NOT NULL,
+	CONSTRAINT hall_row_id_hall_fkey FOREIGN KEY (id_hall) REFERENCES hall(id)
+);
+
+
+
+-- Permissions
+
+ALTER TABLE hall_row OWNER TO postgres;
+GRANT ALL ON TABLE hall_row TO postgres;
+
+
+-- public.screening определение
+
+-- Drop table
+
+-- DROP TABLE screening;
+
+CREATE TABLE screening (
+	id int4 NOT NULL,
+	hall_id int4 NULL,
+	film_id int4 NULL,
+	time_ timestamp NULL,
+	CONSTRAINT screening_pkey PRIMARY KEY (id),
+	CONSTRAINT screening_film_id_fkey FOREIGN KEY (film_id) REFERENCES film(id),
+	CONSTRAINT screening_hall_id_fkey FOREIGN KEY (hall_id) REFERENCES hall(id)
+);
+
+-- Permissions
+
+ALTER TABLE screening OWNER TO postgres;
+GRANT ALL ON TABLE screening TO postgres;
+
+
+-- public.tickets определение
+
+-- Drop table
+
+-- DROP TABLE tickets;
+
+CREATE TABLE tickets (
+	id int4 NOT NULL,
+	id_screening int4 NULL,
+	row_ int4 NULL,
+	seat int4 NULL,
+	cost_ int4 NULL,
+	CONSTRAINT tickets_pkey PRIMARY KEY (id),
+	CONSTRAINT tickets_id_screening_fkey FOREIGN KEY (id_screening) REFERENCES screening(id)
+);
+
+-- Permissions
+
+ALTER TABLE tickets OWNER TO postgres;
+GRANT ALL ON TABLE tickets TO postgres;
+
+
+-- public.film_posle_odinatsat исходный текст
+
+CREATE OR REPLACE VIEW film_posle_odinatsat
+AS SELECT screening.id,
+    screening.hall_id,
+    film.name_,
+    screening.time_,
+    film.description,
+    screening.time_ AS "Начало фильма"
+   FROM screening
+     JOIN film ON film.id = screening.film_id
+  WHERE screening.time_ > '2024-01-01 11:00:00'::timestamp without time zone AND screening.time_ < '2024-01-02 00:00:00'::timestamp without time zone;
+
+-- Permissions
+
+ALTER TABLE film_posle_odinatsat OWNER TO postgres;
+GRANT ALL ON TABLE film_posle_odinatsat TO postgres;
+
+
+-- public.film_posle_odinatsat_new исходный текст
+
+CREATE OR REPLACE VIEW film_posle_odinatsat_new
+AS SELECT screening.id,
+    screening.hall_id,
+    film.name_,
+    screening.time_,
+    film.description,
+    screening.time_ AS "Начало фильма"
+   FROM screening
+     JOIN film ON film.id = screening.film_id
+  WHERE EXTRACT(hour FROM screening.time_) >= 11::numeric;
+
+-- Permissions
+
+ALTER TABLE film_posle_odinatsat_new OWNER TO postgres;
+GRANT ALL ON TABLE film_posle_odinatsat_new TO postgres;
+
+
+-- public.hall_three_row_two исходный текст
+
+CREATE OR REPLACE VIEW hall_three_row_two
+AS SELECT hall.name_ AS "Номер зала",
+    hall_row.namber_ AS "Номер ряда",
+    hall_row.capacity AS "Количество мест"
+   FROM hall_row
+     JOIN hall ON hall.id = hall_row.id_hall
+  WHERE hall.name_::text = 'Зал 3'::text AND hall_row.namber_ = 2;
+
+-- Permissions
+
+ALTER TABLE hall_three_row_two OWNER TO postgres;
+GRANT ALL ON TABLE hall_three_row_two TO postgres;
+
+
+-- public.screening_film_scrol исходный текст
+
+CREATE OR REPLACE VIEW screening_film_scrol
+AS SELECT screening.hall_id,
+    film.name_,
+    film.description,
+    screening.time_ AS "Начало фильма"
+   FROM screening
+     JOIN film ON film.id = screening.film_id
+  WHERE film.name_::text = 'Драйв'::text;
+
+-- Permissions
+
+ALTER TABLE screening_film_scrol OWNER TO postgres;
+GRANT ALL ON TABLE screening_film_scrol TO postgres;
+
+
+-- public.screening_hall_scrol исходный текст
+
+CREATE OR REPLACE VIEW screening_hall_scrol
+AS SELECT screening.id,
+    screening.hall_id,
+    film.name_,
+    screening.time_,
+    screening.time_ AS "Начало фильма"
+   FROM screening
+     JOIN film ON film.id = screening.film_id
+     JOIN hall ON hall.id = screening.hall_id
+  WHERE hall.id = 2;
+
+-- Permissions
+
+ALTER TABLE screening_hall_scrol OWNER TO postgres;
+GRANT ALL ON TABLE screening_hall_scrol TO postgres;
+
+
+
+
+-- Permissions
+
+GRANT ALL ON SCHEMA public TO pg_database_owner;
+GRANT USAGE ON SCHEMA public TO public;
+
+INSERT INTO public.film (id,name_,description) VALUES
+	 (1,'Форсаж 1','Боевик, триллер'),
+	 (2,'Веном 3','Боевик, ужасы'),
+	 (3,'Ужасающий 3','Ужасы'),
+	 (4,'Переводчик','Боевик, триллер'),
+	 (5,'Драйв','Драма');
+INSERT INTO public.hall (id,name_) VALUES
+	 (1,'Зал 1'),
+	 (2,'Зал 2'),
+	 (3,'Зал 3'),
+	 (4,'Зал 4'),
+	 (5,'Зал 5');
+INSERT INTO public.hall_row (id_hall,namber_,capacity) VALUES
+	 (1,1,6),
+	 (2,6,12),
+	 (3,2,8),
+	 (4,3,7),
+	 (5,5,8);
+INSERT INTO public.screening (id,hall_id,film_id,time_) VALUES
+	 (5,4,4,'2024-02-07 11:40:00'),
+	 (1,1,2,'2024-01-01 11:00:00'),
+	 (2,2,1,'2024-01-01 20:40:00'),
+	 (3,3,3,'2024-01-01 11:40:00'),
+	 (4,5,5,'2024-01-02 11:30:00');
+INSERT INTO public.tickets (id,id_screening,row_,seat,cost_) VALUES
+	 (1,1,5,12,450),
+	 (2,3,4,9,350),
+	 (3,2,6,8,400),
+	 (4,5,8,4,300),
+	 (5,4,2,10,500);
